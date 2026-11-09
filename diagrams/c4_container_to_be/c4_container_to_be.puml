@@ -1,0 +1,42 @@
+@startuml c4_container
+!include <C4/C4_Container>
+
+title Кино Бездна — целевая архитектура (To-Be)\nC4: диаграмма контейнеров
+
+LAYOUT_TOP_DOWN()
+
+Person(user, "Пользователь", "Пользователь онлайн кинотеатра.")
+
+' System_Ext(modules, "Устройства партнёров", "Датчики, реле, контроллеры ворот.")
+' System_Ext(cameras, "Камеры партнёров", "Управление и видеопоток.")
+
+System_Boundary(mainSystem, "Кино Бездна") {
+    Container(spa, "Веб-приложение", "TypeScript, React", "SPA приложение для доступа через браузер.")
+    Container(mobile_apple, "Приложение для iOS", "Swift", "Приложение для доступа через мобильные устройства на iOS.")
+    Container(mobile_android, "Приложение для Android", "Kotlin", "Приложение для доступа через мобильные устройства на ОС Android.")
+    Container(smart_tv_android_google, "Приложение для Android TV / Google TV", "Kotlin", "Приложение для доступа через умные ТВ Android TV и Google TV.")
+    Container(smart_tv_apple, "Приложение для tvOS", "Swift", "Приложение для доступа через умные ТВ Apple.")
+    Container(smart_tv_samsung, "Приложение для Samsung Smart TV", "C++, JavaScript", "Приложение для доступа через умные ТВ Samsung (Tizen).")
+
+    Container(bff_tv, "BFF для Smart TV приложений", "Go", "Backend for Frontend для Smart TV.")
+    Container(bff_mobile, "BFF для мобильных приложений", "Go", "Backend for Frontend для мобильных приложений.")
+    Container(bff_web, "BFF для SPA приложения", "Go", "Backend for Frontend для SPA web приложения.")
+}
+
+Rel_D(user, spa, "Взаимодействует через браузер")
+Rel_D(user, mobile_apple, "Взаимодействует через приложение для Apple iOS")
+Rel_D(user, mobile_android, "Взаимодействует через приложение для Android")
+Rel_D(user, smart_tv_android_google, "Взаимодействует через приложение на Smart TV Google или Android")
+Rel_D(user, smart_tv_apple, "Взаимодействует через приложение на Smart TV Apple")
+Rel_D(user, smart_tv_samsung, "Взаимодействует через приложение на Smart TV Samsung")
+
+Rel_D(spa, bff_web, "Использование подготовленных и оптимизированных данных для Web", "HTTP")
+Rel_D(mobile_apple, bff_mobile, "Использование подготовленных и оптимизированных данных для мобильных приложений", "HTTP")
+Rel_D(mobile_android, bff_mobile, "Использование подготовленных и оптимизированных данных для мобильных приложений", "HTTP")
+Rel_D(smart_tv_android_google, bff_tv, "Использование подготовленных и оптимизированных данных для приложений SmartTV", "HTTP")
+Rel_D(smart_tv_apple, bff_tv, "Использование подготовленных и оптимизированных данных для приложений SmartTV", "HTTP")
+Rel_D(smart_tv_samsung, bff_tv, "Использование подготовленных и оптимизированных данных для приложений SmartTV", "HTTP")
+
+
+SHOW_LEGEND()
+@enduml
