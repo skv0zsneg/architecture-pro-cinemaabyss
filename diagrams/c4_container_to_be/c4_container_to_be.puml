@@ -7,10 +7,12 @@ LAYOUT_TOP_DOWN()
 
 Person(user, "Пользователь", "Пользователь онлайн кинотеатра.")
 
-' System_Ext(modules, "Устройства партнёров", "Датчики, реле, контроллеры ворот.")
-' System_Ext(cameras, "Камеры партнёров", "Управление и видеопоток.")
+System_Ext(streamings, "Онлайн кинотеатры-источники", "Внешние сервисы со стримингом контента (CDN партнёров).")
+System_Ext(payments, "Платёжная система", "Внешние интегрированные платёжные системы (webhook + REST).")
+System_Ext(ext_recommendation, "Внешняя рекомендательная система", "ML-мозги: получает события, возвращает рекомендации.")
 
 System_Boundary(mainSystem, "Кино Бездна") {
+    ' Фронт
     Container(spa, "Веб-приложение", "TypeScript, React", "SPA приложение для доступа через браузер.")
     Container(mobile_apple, "Приложение для iOS", "Swift", "Приложение для доступа через мобильные устройства на iOS.")
     Container(mobile_android, "Приложение для Android", "Kotlin", "Приложение для доступа через мобильные устройства на ОС Android.")
@@ -18,11 +20,35 @@ System_Boundary(mainSystem, "Кино Бездна") {
     Container(smart_tv_apple, "Приложение для tvOS", "Swift", "Приложение для доступа через умные ТВ Apple.")
     Container(smart_tv_samsung, "Приложение для Samsung Smart TV", "C++, JavaScript", "Приложение для доступа через умные ТВ Samsung (Tizen).")
 
-    Container(bff_tv, "BFF для Smart TV приложений", "Go", "Backend for Frontend для Smart TV.")
-    Container(bff_mobile, "BFF для мобильных приложений", "Go", "Backend for Frontend для мобильных приложений.")
-    Container(bff_web, "BFF для SPA приложения", "Go", "Backend for Frontend для SPA web приложения.")
+    ' Шлюз (edge)
+    Container(api_gateway, "API Gateway (Proxy Service)", "Kong", "Edge-шлюз: TLS-терминация, валидация JWT, rate-limit, маршрутизация на BFF.")
+
+    ' BFF
+    Container(bff_tv, "BFF для Smart TV приложений", "Node.js", "Backend for Frontend для Smart TV. Агрегирует ответы доменных сервисов под специфику TV-клиента.")
+    Container(bff_mobile, "BFF для мобильных приложений", "Node.js", "Backend for Frontend для мобильных приложений.")
+    Container(bff_web, "BFF для SPA приложения", "Node.js", "Backend for Frontend для SPA web приложения.")
+
+    ' Сервисы
+    Container(users, "User Service", "Go", "Профили, аутентификация, подписки (entitlements). Выдаёт JWT. Владелец user-домена.")
+    Container(payment, "Payment Service", "Go", "Приём платежей, идемпотентность, outbox-публикация событий. Принимает webhook от платёжной системы.")
+    Container(streaming, "Streaming Service", "Go", "Control plane стриминга: проверка права на просмотр, выдача подписанного URL на источник. Видеотрафик не проксирует.")
+    Container(movies, "Movies Service", "Go", "Каталог метаданных фильмов, поиск, жанры. Read-heavy сервис.")
+    Container(favorites, "Favorites & Ratings Service", "Go", "Оценки фильмов, папки избранного. Write-heavy пользовательский домен.")
+    Container(recommendation_proxy, "Recommendation Proxy Service", "Go", "Антикоррупционный слой для внешней рекомендательной системы. Консьюмит события из внутренней Kafka, публикует во внешний Rabbit, кэширует рекомендации в Redis.")
+
+    ' БД и Брокеры
+    ContainerDb(key_value_cache, "Key-Value storage", "Redis", "Кэш сервисов-владельцев данных (каталог, рекомендации). Логические префиксы по сервисам.")
+    ContainerDb(users_db, "БД Пользователей", "Postgres", "Профили, креды, статусы подписок.")
+    ContainerDb(payment_db, "БД Платежей", "Postgres", "Транзакции, outbox, идемпотентные ключи.")
+    ContainerDb(movies_db, "БД Метаданных фильмов", "Postgres", "Метаданные о фильмах.")
+    ContainerDb(favorites_db, "БД Избранного и оценок", "Postgres", "Оценки, папки избранного пользователей.")
+    ContainerDb(s3_movies, "S3 хранилище", "S3", "Постеры, обложки, медиа-метаданные фильмов.")
+    ContainerDb(s3_users, "S3 хранилище", "S3", "Аватары и медиа-файлы пользователей.")
+    Container(message_bus, "Message Broker", "Kafka", "Внутренняя шина событий: платежи, просмотры, изменения каталога.")
+    Container(message_bus_to_ext, "Message Broker", "RabbitMQ", "Шина интеграции с внешней рекомендательной системой (AMQP).")
 }
 
+' --- Пользователь -> фронт ---
 Rel_D(user, spa, "Взаимодействует через браузер")
 Rel_D(user, mobile_apple, "Взаимодействует через приложение для Apple iOS")
 Rel_D(user, mobile_android, "Взаимодействует через приложение для Android")
@@ -30,13 +56,84 @@ Rel_D(user, smart_tv_android_google, "Взаимодействует через 
 Rel_D(user, smart_tv_apple, "Взаимодействует через приложение на Smart TV Apple")
 Rel_D(user, smart_tv_samsung, "Взаимодействует через приложение на Smart TV Samsung")
 
-Rel_D(spa, bff_web, "Использование подготовленных и оптимизированных данных для Web", "HTTP")
-Rel_D(mobile_apple, bff_mobile, "Использование подготовленных и оптимизированных данных для мобильных приложений", "HTTP")
-Rel_D(mobile_android, bff_mobile, "Использование подготовленных и оптимизированных данных для мобильных приложений", "HTTP")
-Rel_D(smart_tv_android_google, bff_tv, "Использование подготовленных и оптимизированных данных для приложений SmartTV", "HTTP")
-Rel_D(smart_tv_apple, bff_tv, "Использование подготовленных и оптимизированных данных для приложений SmartTV", "HTTP")
-Rel_D(smart_tv_samsung, bff_tv, "Использование подготовленных и оптимизированных данных для приложений SmartTV", "HTTP")
+' --- Клиент стримит напрямую с CDN партнёра по подписанному URL ---
+Rel_R(smart_tv_samsung, streamings, "Стриминг напрямую по подписанному URL", "HLS/DASH")
+Rel_R(smart_tv_apple, streamings, "Стриминг напрямую по подписанному URL", "HLS/DASH")
+Rel_R(smart_tv_android_google, streamings, "Стриминг напрямую по подписанному URL", "HLS/DASH")
+Rel_R(mobile_apple, streamings, "Стриминг напрямую по подписанному URL", "HLS/DASH")
+Rel_R(mobile_android, streamings, "Стриминг напрямую по подписанному URL", "HLS/DASH")
+Rel_R(spa, streamings, "Стриминг напрямую по подписанному URL", "HLS/DASH")
 
+' --- Фронт -> Edge Gateway ---
+Rel(spa, api_gateway, "HTTPS запросы", "HTTPS")
+Rel(mobile_apple, api_gateway, "HTTPS запросы", "HTTPS")
+Rel(mobile_android, api_gateway, "HTTPS запросы", "HTTPS")
+Rel(smart_tv_android_google, api_gateway, "HTTPS запросы", "HTTPS")
+Rel(smart_tv_apple, api_gateway, "HTTPS запросы", "HTTPS")
+Rel(smart_tv_samsung, api_gateway, "HTTPS запросы", "HTTPS")
+
+' --- Gateway -> BFF (маршрутизация по client-type) ---
+Rel(api_gateway, bff_web, "Маршрут /web/**", "HTTP")
+Rel(api_gateway, bff_mobile, "Маршрут /mobile/**", "HTTP")
+Rel(api_gateway, bff_tv, "Маршрут /tv/**", "HTTP")
+
+' --- BFF -> сервисы (прямые вызовы, минуя gateway) ---
+Rel(bff_web, users, "Логин, профиль", "gRPC/HTTP")
+Rel(bff_web, movies, "Каталог", "gRPC/HTTP")
+Rel(bff_web, favorites, "Избранное и оценки", "gRPC/HTTP")
+Rel(bff_web, recommendation_proxy, "Рекомендации (из кэша)", "gRPC/HTTP")
+Rel(bff_web, payment, "Создание подписки", "gRPC/HTTP")
+Rel(bff_web, streaming, "Получение URL на стрим", "gRPC/HTTP")
+
+Rel(bff_mobile, users, "Логин, профиль", "gRPC/HTTP")
+Rel(bff_mobile, movies, "Каталог", "gRPC/HTTP")
+Rel(bff_mobile, favorites, "Избранное и оценки", "gRPC/HTTP")
+Rel(bff_mobile, recommendation_proxy, "Рекомендации (из кэша)", "gRPC/HTTP")
+Rel(bff_mobile, payment, "Создание подписки", "gRPC/HTTP")
+Rel(bff_mobile, streaming, "Получение URL на стрим", "gRPC/HTTP")
+
+Rel(bff_tv, users, "Логин, профиль", "gRPC/HTTP")
+Rel(bff_tv, movies, "Каталог", "gRPC/HTTP")
+Rel(bff_tv, favorites, "Избранное и оценки", "gRPC/HTTP")
+Rel(bff_tv, recommendation_proxy, "Рекомендации (из кэша)", "gRPC/HTTP")
+Rel(bff_tv, payment, "Создание подписки", "gRPC/HTTP")
+Rel(bff_tv, streaming, "Получение URL на стрим", "gRPC/HTTP")
+
+' --- Сервисы -> Хранилища ---
+Rel_D(users, users_db, "Профили и подписки", "SQL/TCP")
+Rel_D(payment, payment_db, "Транзакции и outbox", "SQL/TCP")
+Rel_D(movies, movies_db, "Метаданные фильмов", "SQL/TCP")
+Rel_D(favorites, favorites_db, "Оценки и избранное", "SQL/TCP")
+Rel_D(users, s3_users, "Аватары пользователей", "HTTPS")
+Rel_D(movies, s3_movies, "Постеры и обложки", "HTTPS")
+
+' --- Сервисы -> Кэш (каждый сервис кэширует свой домен) ---
+Rel_R(movies, key_value_cache, "Кэш каталога", "Redis/RESP")
+Rel_R(recommendation_proxy, key_value_cache, "Кэш рекомендаций", "Redis/RESP")
+Rel_R(users, key_value_cache, "Кэш профилей/сессий", "Redis/RESP")
+
+' --- Сервисы -> Внешние системы ---
+Rel_L(payment, payments, "Создание транзакции + приём webhook", "HTTPS")
+Rel_L(streaming, streamings, "Запрос манифеста / подписанного URL (control plane)", "HTTPS")
+
+' --- Интеграция с внешней ML-системой через Rabbit ---
+Rel(message_bus_to_ext, ext_recommendation, "События для ML (просмотры, оценки)", "AMQP")
+Rel(ext_recommendation, message_bus_to_ext, "Рассчитанные рекомендации", "AMQP")
+
+' --- Сервисы <-> Внутренняя Kafka ---
+Rel(payment, message_bus, "События: payment.succeeded / failed", "Kafka")
+Rel(message_bus, users, "События платежей -> продление подписок", "Kafka")
+Rel(streaming, message_bus, "События: streaming.view_started / completed", "Kafka")
+Rel(message_bus, recommendation_proxy, "Консьюмит события просмотров и оценок", "Kafka")
+Rel(movies, message_bus, "События изменения каталога (инвалидация кэша)", "Kafka")
+Rel(favorites, message_bus, "События: favorites.rated / added", "Kafka")
+
+' --- Recommendation Proxy <-> Внешний Rabbit ---
+Rel(recommendation_proxy, message_bus_to_ext, "Публикация событий для ML", "AMQP")
+Rel(message_bus_to_ext, recommendation_proxy, "Получение рассчитанных рекомендаций", "AMQP")
+
+' --- Проверка права на просмотр (ключевой flow) ---
+Rel(streaming, users, "Проверка активной подписки (entitlement)", "gRPC/HTTP")
 
 SHOW_LEGEND()
 @enduml
