@@ -1,11 +1,7 @@
-# Global settings
-global:
-  namespace: cinemaabyss
-  domain: cinemaabyss.example.com
-
 # Image pull secrets
 imagePullSecrets:
-  dockerconfigjson: ewoJImF1dGhzIjogewoJCSJnaGNyLmlvIjogewoJCQkiYXV0aCI6
+  name: ""
+  dockerconfigjson: ""
 # Database configuration
 database:
   host: postgres
@@ -22,7 +18,7 @@ database:
       cpu: 1000m
       memory: 1Gi
     requests:
-      cpu: 500m
+      cpu: 100m
       memory: 512Mi
   persistence:
     enabled: true
@@ -33,9 +29,9 @@ database:
 monolith:
   enabled: true
   image:
-    repository: ghcr.io/db-exp/cinemaabysstest/monolith
+    repository: ghcr.io/skv0zsneg/architecture-pro-cinemaabyss/monolith
     tag: latest
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
   replicas: 1
   resources:
     limits:
@@ -53,9 +49,9 @@ monolith:
 proxyService:
   enabled: true
   image:
-    repository: ghcr.io/db-exp/cinemaabysstest/proxy-service
+    repository: ghcr.io/skv0zsneg/architecture-pro-cinemaabyss/proxy-service
     tag: latest
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
   replicas: 1
   resources:
     limits:
@@ -73,9 +69,9 @@ proxyService:
 moviesService:
   enabled: true
   image:
-    repository: ghcr.io/db-exp/cinemaabysstest/movies-service
+    repository: ghcr.io/skv0zsneg/architecture-pro-cinemaabyss/movies-service
     tag: latest
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
   replicas: 1
   resources:
     limits:
@@ -93,9 +89,9 @@ moviesService:
 eventsService:
   enabled: true
   image:
-    repository: ghcr.io/db-exp/cinemaabysstest/events-service
+    repository: ghcr.io/skv0zsneg/architecture-pro-cinemaabyss/events-service
     tag: latest
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
   replicas: 1
   resources:
     limits:
@@ -122,29 +118,18 @@ kafka:
       cpu: 1000m
       memory: 1Gi
     requests:
-      cpu: 200m
+      cpu: 100m
       memory: 512Mi
   persistence:
     enabled: true
     size: 5Gi
     accessMode: ReadWriteOnce
-  topics:
-    - name: movie-events
-      partitions: 1
-      replicationFactor: 1
-    - name: user-events
-      partitions: 1
-      replicationFactor: 1
-    - name: payment-events
-      partitions: 1
-      replicationFactor: 1
-
 # Zookeeper configuration
 zookeeper:
   enabled: true
   image:
-    repository: wurstmeister/zookeeper
-    tag: latest
+    repository: zookeeper
+    tag: "3.9"
     pullPolicy: IfNotPresent
   replicas: 1
   resources:
@@ -183,3 +168,11 @@ config:
   # Strangler Fig configuration
   gradualMigration: "true"
   moviesMigrationPercent: "100"
+  kafkaConsumerGroup: cinemaabyss-events
+
+istio:
+  enabled: false
+  services: [monolith, movies-service]
+  maxConnections: 1
+  maxPendingRequests: 1
+  maxRequests: 1

@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: events-service
-  namespace: {{ .Values.global.namespace }}
+  namespace: {{ .Release.Namespace }}
   labels:
     app: events-service
     app.kubernetes.io/name: {{ include "cinemaabyss.name" . }}
@@ -22,20 +22,56 @@ spec:
     metadata:
       labels:
         app: events-service
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       containers:
       - name: events-service
-       .... тут
+        image: {{ .Values.eventsService.image.repository }}:{{ .Values.eventsService.image.tag }}
+        imagePullPolicy: {{ .Values.eventsService.image.pullPolicy }}
+        ports:
+          - containerPort: {{ .Values.eventsService.service.targetPort }}
+        env:
+          - name: PORT
+            value: {{ .Values.eventsService.service.targetPort | quote }}
+        envFrom:
+          - configMapRef:
+              name: cinemaabyss-config
+        resources:
+          {{- toYaml .Values.eventsService.resources | nindent 10 }}
+        startupProbe:
+          httpGet:
+            path: /api/events/health
+            port: {{ .Values.eventsService.service.targetPort }}
+          periodSeconds: 5
+          failureThreshold: 60
+        readinessProbe:
+          httpGet:
+            path: /api/events/health
+            port: {{ .Values.eventsService.service.targetPort }}
+        livenessProbe:
+          tcpSocket:
+            port: {{ .Values.eventsService.service.targetPort }}
+      {{- if or .Values.imagePullSecrets.name .Values.imagePullSecrets.dockerconfigjson }}
+      imagePullSecrets:
+        - name: {{ .Values.imagePullSecrets.name | default "dockerconfigjson" }}
+      {{- end }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: events-service
-  namespace: {{ .Values.global.namespace }}
+  namespace: {{ .Release.Namespace }}
   labels:
     app: events-service
     app.kubernetes.io/name: {{ include "cinemaabyss.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
- ........ и тут
+  selector:
+    app: events-service
+  ports:
+    - name: http
+      port: {{ .Values.eventsService.service.port }}
+      targetPort: {{ .Values.eventsService.service.targetPort }}
+  type: {{ .Values.eventsService.service.type }}
 {{- end }}
