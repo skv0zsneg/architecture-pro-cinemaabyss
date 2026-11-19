@@ -36,7 +36,9 @@ Postman: **22 запроса, 42 проверки, 0 ошибок**.
 
 Postman (`npm run test:kubernetes` из `tests/postman`): **22 запроса, 42 проверки, 0 ошибок**. Проверка workflow через `actionlint` также пройдена.
 
-> Зелёный запуск GitHub Actions и публикацию GHCR осталось подтвердить после push. Локальный деплой проверен на загруженных в Minikube образах.
+![GitHub Actions API Tests](/screenshots/actions_api_tests.png)
+
+![GitHub Actions Build and Push](/screenshots/actions_build_and_push.png)
 
 ![Postman в Kubernetes](/screenshots/postman_tests_kubernetes.png)
 
