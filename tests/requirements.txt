@@ -1,0 +1,2 @@
+-r ../src/microservices/proxy/requirements.txt
+-r ../src/microservices/events/requirements.txt
