@@ -17,7 +17,7 @@ spec:
         - name: dockerconfigjson
       containers:
         - name: events-service
-          image: ghcr.io/skv0zsneg/architecture-pro-cinemaabyss/events-service:latest
+          image: ghcr.io/skv0zsneg/architecture-pro-cinemaabyss/events-service:cinema
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8082

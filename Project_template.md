@@ -66,14 +66,18 @@ Postman (`npm run test:kubernetes` из `tests/postman`): **22 запроса, 4
 
 > **Комментарий** В существующих шаблонах namespace берётся из `.Release.Namespace`, чтобы работал параметр `--namespace`. Исправлен адрес `movies` на `movies-service`, добавлены параметры Events и Kafka. Registry secret стал необязательным, его имя настраивается отдельно; значения Secret заключены в кавычки. Checksum-аннотации нужны, чтобы изменение ConfigMap или Secret запускало rollout, а приложения получали новые переменные окружения.
 
+> **Комментарий** После замечания ревьюера тег четырёх приложений в Helm и Kubernetes заменён с `latest` на опубликованный `cinema`. CI в ветке `cinema` публикует тег ветки, а `latest` — только для `main` или релиза. Прежняя проверка на локально загруженных образах скрывала эту ошибку. Правильный адрес сервиса событий — `ghcr.io/skv0zsneg/architecture-pro-cinemaabyss/events-service:cinema`.
+
 ```bash
 helm upgrade --install cinemaabyss src/kubernetes/helm \
   --namespace cinemaabyss --create-namespace --wait --timeout 5m
 ```
 
-Проверена чистая установка после удаления ручного деплоя. Релиз — `deployed`, HTTPS возвращает фильмы, Postman — **42/42**.
+Повторная чистая установка в `cinemaabyss-review` проверена с загрузкой из GHCR (`Always`, без registry secret). Для параллельного стенда использованы отдельный домен и меньший резерв CPU. Релиз — `deployed`, HTTPS возвращает фильмы, Postman — **42/42**.
 
 ![Helm и HTTPS API](/screenshots/helm_movies.png)
+
+![Успешная загрузка четырёх образов из GHCR](/screenshots/ghcr_images.png)
 
 ## Задание 5
 

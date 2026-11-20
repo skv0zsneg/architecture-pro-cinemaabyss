@@ -30,7 +30,7 @@ monolith:
   enabled: true
   image:
     repository: ghcr.io/skv0zsneg/architecture-pro-cinemaabyss/monolith
-    tag: latest
+    tag: cinema
     pullPolicy: IfNotPresent
   replicas: 1
   resources:
@@ -50,7 +50,7 @@ proxyService:
   enabled: true
   image:
     repository: ghcr.io/skv0zsneg/architecture-pro-cinemaabyss/proxy-service
-    tag: latest
+    tag: cinema
     pullPolicy: IfNotPresent
   replicas: 1
   resources:
@@ -70,7 +70,7 @@ moviesService:
   enabled: true
   image:
     repository: ghcr.io/skv0zsneg/architecture-pro-cinemaabyss/movies-service
-    tag: latest
+    tag: cinema
     pullPolicy: IfNotPresent
   replicas: 1
   resources:
@@ -90,7 +90,7 @@ eventsService:
   enabled: true
   image:
     repository: ghcr.io/skv0zsneg/architecture-pro-cinemaabyss/events-service
-    tag: latest
+    tag: cinema
     pullPolicy: IfNotPresent
   replicas: 1
   resources:

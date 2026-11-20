@@ -12,7 +12,7 @@ for service in monolith movies-service events-service proxy-service; do
     events-service) context="$root/src/microservices/events" ;;
     proxy-service) context="$root/src/microservices/proxy" ;;
   esac
-  image="$repository/$service:latest"
+  image="$repository/$service:cinema"
   docker build -t "$image" "$context"
   minikube -p "$profile" image load "$image"
 done
