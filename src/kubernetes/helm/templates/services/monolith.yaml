@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: monolith
-  namespace: {{ .Values.global.namespace }}
+  namespace: {{ .Release.Namespace }}
   labels:
     app: monolith
     app.kubernetes.io/name: {{ include "cinemaabyss.name" . }}
@@ -22,6 +22,9 @@ spec:
     metadata:
       labels:
         app: monolith
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
     spec:
       containers:
       - name: monolith
@@ -54,14 +57,16 @@ spec:
           initialDelaySeconds: 15
           periodSeconds: 20
       restartPolicy: Always
+      {{- if or .Values.imagePullSecrets.name .Values.imagePullSecrets.dockerconfigjson }}
       imagePullSecrets:
-        - name: dockerconfigjson
+        - name: {{ .Values.imagePullSecrets.name | default "dockerconfigjson" }}
+      {{- end }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: monolith
-  namespace: {{ .Values.global.namespace }}
+  namespace: {{ .Release.Namespace }}
   labels:
     app: monolith
     app.kubernetes.io/name: {{ include "cinemaabyss.name" . }}
@@ -70,7 +75,8 @@ spec:
   selector:
     app: monolith
   ports:
-  - port: {{ .Values.monolith.service.port }}
+  - name: http
+    port: {{ .Values.monolith.service.port }}
     targetPort: {{ .Values.monolith.service.targetPort }}
   type: {{ .Values.monolith.service.type }}
 {{- end }}

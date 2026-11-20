@@ -22,8 +22,8 @@ spec:
     spec:
       containers:
       - name: movies-service
-        image: ghcr.io/db-exp/cinemaabysstest/movies-service:latest
-        imagePullPolicy: Always
+        image: ghcr.io/skv0zsneg/architecture-pro-cinemaabyss/movies-service:cinema
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8081
         env:
@@ -68,6 +68,7 @@ spec:
   selector:
     app: movies-service
   ports:
-  - port: 8081
+  - name: http
+    port: 8081
     targetPort: 8081
   type: ClusterIP

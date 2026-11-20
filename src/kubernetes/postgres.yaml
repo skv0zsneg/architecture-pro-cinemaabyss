@@ -13,6 +13,8 @@ spec:
     metadata:
       labels:
         app: postgres
+      annotations:
+        sidecar.istio.io/inject: "false"
     spec:
       containers:
       - name: postgres
@@ -40,7 +42,7 @@ spec:
             cpu: "1000m"
             memory: "1Gi"
           requests:
-            cpu: "500m"
+            cpu: "100m"
             memory: "512Mi"
         volumeMounts:
         - name: postgres-data

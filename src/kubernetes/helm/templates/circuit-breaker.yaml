@@ -1,0 +1,40 @@
+{{- if .Values.istio.enabled }}
+{{- range .Values.istio.services }}
+---
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: {{ . }}-circuit-breaker
+  namespace: {{ $.Release.Namespace }}
+spec:
+  host: {{ . }}.{{ $.Release.Namespace }}.svc.cluster.local
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: {{ $.Values.istio.maxConnections }}
+      http:
+        http1MaxPendingRequests: {{ $.Values.istio.maxPendingRequests }}
+        http2MaxRequests: {{ $.Values.istio.maxRequests }}
+        maxRequestsPerConnection: 1
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 5s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 100
+      minHealthPercent: 0
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: {{ . }}-no-retries
+  namespace: {{ $.Release.Namespace }}
+spec:
+  hosts: [{{ . }}.{{ $.Release.Namespace }}.svc.cluster.local]
+  http:
+    - route:
+        - destination:
+            host: {{ . }}.{{ $.Release.Namespace }}.svc.cluster.local
+      retries:
+        attempts: 0
+{{- end }}
+{{- end }}
